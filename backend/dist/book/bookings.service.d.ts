@@ -9,4 +9,6 @@ export declare class BookingsService {
     findMyBookings(userId: number): Promise<BookingEntity[]>;
     checkAvailability(date: string, timeSlot: string): Promise<boolean>;
     remove(id: number): Promise<void>;
+    findOne(id: number): Promise<BookingEntity>;
+    updateBooking(id: number, updateData: any): Promise<BookingEntity>;
 }

@@ -181,7 +181,9 @@ export default function HistoryPage() {
                   >
                     <Trash2 size={14} /> ลบรายการ
                   </button>
-                  <button className="text-[11px] font-bold text-[#1A4F90] hover:text-blue-700 transition-colors flex items-center gap-1">
+                  <button 
+                    onClick={() => navigate(`/history/${booking.id}`)}
+                    className="text-[11px] font-bold text-[#1A4F90] hover:text-blue-700 transition-colors flex items-center gap-1">
                     ดูรายละเอียด <ChevronRight size={14} />
                   </button>
                 </div>

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Delete, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Delete, Param, Patch } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
@@ -39,11 +39,23 @@ export class BookingsController {
     const mockUserId = 1; 
     return this.bookingsService.findMyBookings(mockUserId);
   }
-  
+
   @Delete(':id')
   async remove(@Param('id') id: string) {
     // ใช้เครื่องหมาย + เพื่อแปลง id จากตัวอักษรเป็นตัวเลข
     await this.bookingsService.remove(+id);
     return { message: 'ลบข้อมูลสำเร็จเรียบร้อย' };
+  }
+
+  // --- API สำหรับดึงข้อมูล 1 รายการ ---
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.bookingsService.findOne(+id);
+  }
+
+  // --- API สำหรับอัปเดตข้อมูลทั่วไป ---
+  @Patch(':id')
+  async updateBooking(@Param('id') id: string, @Body() updateData: any) {
+    return this.bookingsService.updateBooking(+id, updateData);
   }
 }

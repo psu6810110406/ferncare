@@ -43,6 +43,12 @@ let BookingsController = class BookingsController {
         await this.bookingsService.remove(+id);
         return { message: 'ลบข้อมูลสำเร็จเรียบร้อย' };
     }
+    async findOne(id) {
+        return this.bookingsService.findOne(+id);
+    }
+    async updateBooking(id, updateData) {
+        return this.bookingsService.updateBooking(+id, updateData);
+    }
 };
 exports.BookingsController = BookingsController;
 __decorate([
@@ -79,6 +85,21 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], BookingsController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], BookingsController.prototype, "updateBooking", null);
 exports.BookingsController = BookingsController = __decorate([
     (0, common_1.Controller)('bookings'),
     __metadata("design:paramtypes", [bookings_service_1.BookingsService])

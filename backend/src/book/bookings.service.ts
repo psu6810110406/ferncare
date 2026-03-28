@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BookingEntity } from './entities/booking.entity';
@@ -45,5 +45,21 @@ export class BookingsService {
 
   async remove(id: number): Promise<void> {
     await this.bookingRepository.delete(id);
+  }
+
+  async findOne(id: number): Promise<BookingEntity> {
+    const booking = await this.bookingRepository.findOne({ where: { id } });
+    
+    // ถ้าหาไม่เจอ ให้โยน Error 404 Not Found กลับไป
+    if (!booking) {
+      throw new NotFoundException(`ไม่พบข้อมูลการจองรหัส ${id}`);
+    }
+    
+    return booking;
+  }
+
+  async updateBooking(id: number, updateData: any): Promise<BookingEntity> {
+    await this.bookingRepository.update(id, updateData);
+    return this.findOne(id); // คืนค่าข้อมูลที่อัปเดตแล้วกลับไป
   }
 }

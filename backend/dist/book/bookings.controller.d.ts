@@ -12,4 +12,6 @@ export declare class BookingsController {
     remove(id: string): Promise<{
         message: string;
     }>;
+    findOne(id: string): Promise<import("./entities/booking.entity").BookingEntity>;
+    updateBooking(id: string, updateData: any): Promise<import("./entities/booking.entity").BookingEntity>;
 }

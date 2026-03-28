@@ -49,6 +49,17 @@ let BookingsService = class BookingsService {
     async remove(id) {
         await this.bookingRepository.delete(id);
     }
+    async findOne(id) {
+        const booking = await this.bookingRepository.findOne({ where: { id } });
+        if (!booking) {
+            throw new common_1.NotFoundException(`ไม่พบข้อมูลการจองรหัส ${id}`);
+        }
+        return booking;
+    }
+    async updateBooking(id, updateData) {
+        await this.bookingRepository.update(id, updateData);
+        return this.findOne(id);
+    }
 };
 exports.BookingsService = BookingsService;
 exports.BookingsService = BookingsService = __decorate([

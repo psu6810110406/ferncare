@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import BookingDetailsPage from './pages/BookingDetailsPage'
 import HistoryPage from './pages/HistoryPage';
+import HistoryDetailPage from './pages/HistoryDetailPage';
 
 function App() {
   return (
@@ -21,7 +22,9 @@ function App() {
         <Route path="/booking-details" element={<BookingDetailsPage />} />
         
         <Route path="/history" element={<HistoryPage />} />
-        
+
+        <Route path="/history/:id" element={<HistoryDetailPage />} />
+
         {/* กันเหนียว: ถ้าพิมพ์ URL มั่วๆ ให้กลับมาหน้าแรก */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
