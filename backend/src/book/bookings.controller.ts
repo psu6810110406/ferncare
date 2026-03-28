@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Query, Delete, Param, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Delete, Param, Patch, UseGuards, Request as NestRequest } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import type { Request } from 'express'; // ใช้ Request จาก express สำหรับ Type
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
@@ -11,16 +13,19 @@ export class BookingsController {
     return this.bookingsService.findAll();
   }
 
-  // 📝 แก้ไขฟังก์ชันนี้: เพิ่ม userId ลงไปตอนบันทึกข้อมูล
+  // ✅ ใช้ UseGuards และระบุ Type ให้ req: Request
+  @UseGuards(AuthGuard('jwt')) 
   @Post()
-  async create(@Body() createBookingDto: CreateBookingDto) {
-    // กำหนด userId เป็น 1 ชั่วคราว (mock) เพื่อให้ตรงกับตอนดึง my-bookings
+  async create(@NestRequest() req: Request, @Body() createBookingDto: CreateBookingDto) {
+    // ใช้ as any เพื่อดึง userId จาก user object ที่ Passport ยัดใส่มาให้
+    const user = req.user as any;
+    const userId = user.userId; 
+    
     const bookingDataToSave = {
       ...createBookingDto,
-      userId: 1, 
+      userId: userId,
     };
     
-    // ส่งข้อมูลที่มี userId=1 ไปให้ Service บันทึกลงฐานข้อมูล
     return this.bookingsService.create(bookingDataToSave);
   }
 
@@ -33,27 +38,26 @@ export class BookingsController {
     return { isAvailable }; 
   }
 
+  // ✅ ดึงเฉพาะการจองของตัวเอง
+  @UseGuards(AuthGuard('jwt'))
   @Get('my-bookings')
-  async getMyBookings() {
-    // ตอนนี้จะหาเจอแล้ว เพราะตอนบันทึกเราเซฟเป็น userId = 1 แล้ว
-    const mockUserId = 1; 
-    return this.bookingsService.findMyBookings(mockUserId);
+  async getMyBookings(@NestRequest() req: Request) {
+    const user = req.user as any;
+    const userId = user.userId; 
+    return this.bookingsService.findMyBookings(userId);
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    // ใช้เครื่องหมาย + เพื่อแปลง id จากตัวอักษรเป็นตัวเลข
     await this.bookingsService.remove(+id);
     return { message: 'ลบข้อมูลสำเร็จเรียบร้อย' };
   }
 
-  // --- API สำหรับดึงข้อมูล 1 รายการ ---
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.bookingsService.findOne(+id);
   }
 
-  // --- API สำหรับอัปเดตข้อมูลทั่วไป ---
   @Patch(':id')
   async updateBooking(@Param('id') id: string, @Body() updateData: any) {
     return this.bookingsService.updateBooking(+id, updateData);

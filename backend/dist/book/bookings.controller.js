@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BookingsController = void 0;
 const common_1 = require("@nestjs/common");
+const passport_1 = require("@nestjs/passport");
 const bookings_service_1 = require("./bookings.service");
 const create_booking_dto_1 = require("./dto/create-booking.dto");
 let BookingsController = class BookingsController {
@@ -24,10 +25,12 @@ let BookingsController = class BookingsController {
     async findAll() {
         return this.bookingsService.findAll();
     }
-    async create(createBookingDto) {
+    async create(req, createBookingDto) {
+        const user = req.user;
+        const userId = user.userId;
         const bookingDataToSave = {
             ...createBookingDto,
-            userId: 1,
+            userId: userId,
         };
         return this.bookingsService.create(bookingDataToSave);
     }
@@ -35,9 +38,10 @@ let BookingsController = class BookingsController {
         const isAvailable = await this.bookingsService.checkAvailability(date, timeSlot);
         return { isAvailable };
     }
-    async getMyBookings() {
-        const mockUserId = 1;
-        return this.bookingsService.findMyBookings(mockUserId);
+    async getMyBookings(req) {
+        const user = req.user;
+        const userId = user.userId;
+        return this.bookingsService.findMyBookings(userId);
     }
     async remove(id) {
         await this.bookingsService.remove(+id);
@@ -58,10 +62,12 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "findAll", null);
 __decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_booking_dto_1.CreateBookingDto]),
+    __metadata("design:paramtypes", [Object, create_booking_dto_1.CreateBookingDto]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "create", null);
 __decorate([
@@ -73,9 +79,11 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "checkAvailability", null);
 __decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
     (0, common_1.Get)('my-bookings'),
+    __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "getMyBookings", null);
 __decorate([
