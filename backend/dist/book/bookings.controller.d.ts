@@ -1,9 +1,15 @@
-import { BookingsService } from '../book/bookings.service';
-import { CreateBookingDto } from '../book/dto/create-booking.dto';
-import { BookingEntity } from './booking.entity';
+import { BookingsService } from './bookings.service';
+import { CreateBookingDto } from './dto/create-booking.dto';
 export declare class BookingsController {
     private readonly bookingsService;
     constructor(bookingsService: BookingsService);
-    getAllBookings(): Promise<BookingEntity[]>;
-    createBooking(bookingData: CreateBookingDto): Promise<BookingEntity>;
+    findAll(): Promise<import("./entities/booking.entity").BookingEntity[]>;
+    create(createBookingDto: CreateBookingDto): Promise<import("./entities/booking.entity").BookingEntity>;
+    checkAvailability(date: string, timeSlot: string): Promise<{
+        isAvailable: boolean;
+    }>;
+    getMyBookings(): Promise<import("./entities/booking.entity").BookingEntity[]>;
+    remove(id: string): Promise<{
+        message: string;
+    }>;
 }

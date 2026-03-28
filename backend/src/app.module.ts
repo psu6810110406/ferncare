@@ -6,7 +6,7 @@ import { AppService } from './app.service';
 // --- นำเข้าส่วนของการจอง (ของเดิมที่คุณมี) ---
 import { BookingsController } from './book/bookings.controller';
 import { BookingsService } from './book/bookings.service';
-import { BookingEntity } from './book/booking.entity';
+import { BookingEntity } from './book/entities/booking.entity';
 
 // --- นำเข้าส่วนของระบบ User และ Auth (ที่เราเพิ่งสร้าง) ---
 import { UsersModule } from './users/users.module';

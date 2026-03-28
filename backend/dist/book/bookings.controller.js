@@ -14,18 +14,34 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BookingsController = void 0;
 const common_1 = require("@nestjs/common");
-const bookings_service_1 = require("../book/bookings.service");
-const create_booking_dto_1 = require("../book/dto/create-booking.dto");
+const bookings_service_1 = require("./bookings.service");
+const create_booking_dto_1 = require("./dto/create-booking.dto");
 let BookingsController = class BookingsController {
     bookingsService;
     constructor(bookingsService) {
         this.bookingsService = bookingsService;
     }
-    async getAllBookings() {
+    async findAll() {
         return this.bookingsService.findAll();
     }
-    async createBooking(bookingData) {
-        return this.bookingsService.create(bookingData);
+    async create(createBookingDto) {
+        const bookingDataToSave = {
+            ...createBookingDto,
+            userId: 1,
+        };
+        return this.bookingsService.create(bookingDataToSave);
+    }
+    async checkAvailability(date, timeSlot) {
+        const isAvailable = await this.bookingsService.checkAvailability(date, timeSlot);
+        return { isAvailable };
+    }
+    async getMyBookings() {
+        const mockUserId = 1;
+        return this.bookingsService.findMyBookings(mockUserId);
+    }
+    async remove(id) {
+        await this.bookingsService.remove(+id);
+        return { message: 'ลบข้อมูลสำเร็จเรียบร้อย' };
     }
 };
 exports.BookingsController = BookingsController;
@@ -34,14 +50,35 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
-], BookingsController.prototype, "getAllBookings", null);
+], BookingsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_booking_dto_1.CreateBookingDto]),
     __metadata("design:returntype", Promise)
-], BookingsController.prototype, "createBooking", null);
+], BookingsController.prototype, "create", null);
+__decorate([
+    (0, common_1.Get)('check-availability'),
+    __param(0, (0, common_1.Query)('date')),
+    __param(1, (0, common_1.Query)('timeSlot')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], BookingsController.prototype, "checkAvailability", null);
+__decorate([
+    (0, common_1.Get)('my-bookings'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], BookingsController.prototype, "getMyBookings", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], BookingsController.prototype, "remove", null);
 exports.BookingsController = BookingsController = __decorate([
     (0, common_1.Controller)('bookings'),
     __metadata("design:paramtypes", [bookings_service_1.BookingsService])

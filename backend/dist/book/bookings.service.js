@@ -31,6 +31,12 @@ let BookingsService = class BookingsService {
         const booking = this.bookingRepository.create(createBookingDto);
         return this.bookingRepository.save(booking);
     }
+    async findMyBookings(userId) {
+        return this.bookingRepository.find({
+            where: { userId: userId },
+            order: { id: 'DESC' },
+        });
+    }
     async checkAvailability(date, timeSlot) {
         const existingBooking = await this.bookingRepository.findOne({
             where: [
@@ -39,6 +45,9 @@ let BookingsService = class BookingsService {
             ]
         });
         return !existingBooking;
+    }
+    async remove(id) {
+        await this.bookingRepository.delete(id);
     }
 };
 exports.BookingsService = BookingsService;

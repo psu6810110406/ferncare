@@ -22,6 +22,13 @@ export class BookingsService {
     return this.bookingRepository.save(booking);
   }
 
+  async findMyBookings(userId: number): Promise<BookingEntity[]> {
+    return this.bookingRepository.find({
+      where: { userId: userId }, // หาเฉพาะคิวที่เป็นของ User คนนี้
+      order: { id: 'DESC' }, // เรียงจากคิวที่จองล่าสุดขึ้นก่อน
+    });
+  }
+
   // --- เพิ่มฟังก์ชันตรวจสอบคิวว่างตรงนี้ครับ ---
   async checkAvailability(date: string, timeSlot: string): Promise<boolean> {
     const existingBooking = await this.bookingRepository.findOne({
@@ -34,5 +41,9 @@ export class BookingsService {
     // ถ้า existingBooking มีค่า (หาเจอในฐานข้อมูล) แปลว่า ไม่ว่าง (return false)
     // ถ้า existingBooking เป็น null (หาไม่เจอ) แปลว่า ว่าง (return true)
     return !existingBooking;
+  }
+
+  async remove(id: number): Promise<void> {
+    await this.bookingRepository.delete(id);
   }
 }
