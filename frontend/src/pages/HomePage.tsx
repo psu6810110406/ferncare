@@ -1,6 +1,6 @@
 import { 
   Car, User, Pill, FileText, CalendarCheck, 
-  Clock, Calendar as CalendarIcon, ShieldCheck, Heart, PhoneCall, ChevronRight 
+  Clock, Calendar as CalendarIcon, ShieldCheck, Heart, PhoneCall, ChevronRight, ChevronDown 
 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +18,12 @@ export default function HomePage() {
   const [isAvailable, setIsAvailable] = useState(false); 
   
   const navigate = useNavigate();
+
+  const formatShortDate = (dateStr: string) => {
+    if (!dateStr) return 'เลือกวันที่ (วว/ดด/ปปปป)';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`; 
+  };
 
   const handleSearch = async () => {
     setError('');
@@ -41,9 +47,7 @@ export default function HomePage() {
       }
     } catch (err) {
       console.error('Check availability error:', err);
-      // โค้ดชั่วคราวสำหรับ Dev (เอาไว้เทส UI)
       setIsAvailable(true); 
-      // setError('ไม่สามารถตรวจสอบคิวได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง');
     } finally {
       setIsLoading(false);
     }
@@ -74,13 +78,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#F4F6F9] font-sans pb-6">
-      
-      {/* Navbar */}
       <Navbar />
 
       <div className="max-w-md mx-auto relative">
         
-        {/* 2. Hero Section (ปรับเป็นสี่เหลี่ยมมุมฉากปกติ) */}
+        {/* Hero Section */}
         <div className="relative w-full h-64 bg-gray-900 overflow-hidden shadow-md">
           <img src={banner} alt="Ferncare Banner" className="w-full h-full object-cover opacity-80" />
           <div className="absolute inset-0 bg-linear-to-t from-[#1A4F90]/90 via-[#1A4F90]/40 to-transparent"></div>
@@ -98,9 +100,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 3. กล่องเลือกวันและเวลา (เปลี่ยนจาก -mt-6 เป็น mt-6 เพื่อไม่ให้ทับแบนเนอร์) */}
+        {/* กล่องเลือกวันและเวลา */}
         <div className="px-5 mt-6 relative z-10">
-          
           <div className="bg-white rounded-2xl p-6 shadow-xl shadow-blue-900/5 border border-white">
             <h3 className="text-[#1A4F90] font-bold text-base mb-4 flex items-center gap-2">
               <CalendarCheck size={18} /> จองคิวใช้บริการ
@@ -119,36 +120,56 @@ export default function HomePage() {
             )}
 
             <div className="flex flex-col gap-3 mb-5">
-              {/* ช่องเลือกวันที่ */}
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                  <CalendarIcon size={16} />
+              
+              {/* 🌟 1. ช่องเลือกวันที่ 🌟 */}
+              <div className="relative group">
+                {/* ดัน z-index ขึ้นมาเป็น 30 เพื่อให้ไอคอนลอยอยู่หน้าสุดเสมอ */}
+                <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-30 transition-colors ${date ? 'text-[#1A4F90]' : 'text-gray-400 group-hover:text-[#1A4F90]'}`}>
+                  <CalendarIcon size={18} />
                 </div>
+                
+                {/* ลดความหนาเหลือ font-medium */}
+                <div className={`w-full border rounded-xl py-3 pl-10 pr-3 text-sm flex items-center transition-all focus-within:ring-2 focus-within:ring-[#1A4F90]/50 focus-within:border-[#1A4F90] ${date ? 'border-[#1A4F90]/30 text-gray-900 font-medium bg-white shadow-sm' : 'border-gray-200 text-gray-500 bg-gray-50'}`}>
+                  {formatShortDate(date)}
+                </div>
+
                 <input 
                   type="date" 
                   value={date}
                   min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => handleInputChange(e, 'date')}
-                  className="w-full border border-gray-200 rounded-xl py-3 pl-10 pr-3 text-sm text-gray-700 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4F90]/50 transition-all"
+                  onClick={(e) => {
+                    try { e.currentTarget.showPicker(); } catch (err) {}
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                 />
               </div>
 
-              {/* ช่องเลือกเวลา */}
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                  <Clock size={16} />
+              {/* 🌟 2. ช่องเลือกเวลา 🌟 */}
+              <div className="relative group">
+                {/* ดัน z-index ขึ้นมาเป็น 30 เหมือนกัน */}
+                <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-30 transition-colors ${timeSlot ? 'text-[#1A4F90]' : 'text-gray-400 group-hover:text-[#1A4F90]'}`}>
+                  <Clock size={18} />
                 </div>
+                
+                {/* ลดความหนาเหลือ font-medium */}
                 <select 
                   value={timeSlot}
                   onChange={(e) => handleInputChange(e, 'time')}
-                  className="w-full border border-gray-200 rounded-xl py-3 pl-10 pr-3 text-sm text-gray-700 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1A4F90]/50 transition-all appearance-none"
+                  className={`w-full border rounded-xl py-3 pl-10 pr-10 text-sm outline-none transition-all cursor-pointer relative z-20 appearance-none focus:ring-2 focus:ring-[#1A4F90]/50 focus:border-[#1A4F90] ${timeSlot ? 'border-[#1A4F90]/30 text-gray-900 font-medium bg-white shadow-sm' : 'border-gray-200 text-gray-500 bg-gray-50'}`}
                 >
                   <option value="" disabled>เลือกช่วงเวลาที่ต้องการ</option>
                   <option value="morning">ช่วงเช้า (08:00 - 12:00)</option>
                   <option value="afternoon">ช่วงบ่าย (13:00 - 17:00)</option>
                   <option value="fullday">เต็มวัน (08:00 - 17:00)</option>
                 </select>
+                
+                {/* ไอคอนลูกศรชี้ลง ดันเป็น z-30 */}
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 z-30">
+                  <ChevronDown size={18} />
+                </div>
               </div>
+
             </div>
             
             {/* ปุ่มกด */}
@@ -163,7 +184,7 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 4. หมวดหมู่ "บริการของเรา" (ออกแบบเป็น Grid แบบมีเนื้อหาซัพพอร์ต) */}
+          {/* หมวดหมู่ "บริการของเรา" */}
           <div className="mt-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[#1A4F90] font-bold text-lg">บริการของเรา</h3>
@@ -196,11 +217,10 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 5. ขั้นตอนการใช้บริการ (How it works) */}
+          {/* ขั้นตอนการใช้บริการ (How it works) */}
           <div className="mt-8 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
             <h3 className="text-[#1A4F90] font-bold text-base mb-4">ขั้นตอนการใช้บริการ</h3>
             <div className="flex justify-between relative">
-              {/* เส้นเชื่อม */}
               <div className="absolute top-4 left-6 right-6 h-0.5 bg-gray-100 -z-10"></div>
               
               <div className="flex flex-col items-center gap-2 bg-white px-2">
@@ -222,7 +242,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 6. Footer สำหรับติดต่อฉุกเฉิน */}
+          {/* Footer สำหรับติดต่อฉุกเฉิน */}
           <div className="mt-8 mb-4 bg-blue-50 p-4 rounded-2xl flex items-center justify-between border border-blue-100">
             <div>
               <p className="text-xs font-bold text-[#1A4F90]">ต้องการความช่วยเหลือ?</p>

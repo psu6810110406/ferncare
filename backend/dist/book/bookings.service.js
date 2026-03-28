@@ -38,13 +38,26 @@ let BookingsService = class BookingsService {
         });
     }
     async checkAvailability(date, timeSlot) {
-        const existingBooking = await this.bookingRepository.findOne({
-            where: [
-                { date: date, timeSlot: timeSlot },
-                { date: date, timeSlot: 'fullday' }
-            ]
+        const bookingsOnDate = await this.bookingRepository.find({
+            where: {
+                date: date,
+                status: (0, typeorm_2.Not)('cancelled')
+            }
         });
-        return !existingBooking;
+        if (bookingsOnDate.length === 0) {
+            return true;
+        }
+        let isConflict = false;
+        if (timeSlot === 'fullday') {
+            isConflict = bookingsOnDate.length > 0;
+        }
+        else if (timeSlot === 'morning') {
+            isConflict = bookingsOnDate.some(b => b.timeSlot === 'morning' || b.timeSlot === 'fullday');
+        }
+        else if (timeSlot === 'afternoon') {
+            isConflict = bookingsOnDate.some(b => b.timeSlot === 'afternoon' || b.timeSlot === 'fullday');
+        }
+        return !isConflict;
     }
     async remove(id) {
         await this.bookingRepository.delete(id);

@@ -7,4 +7,17 @@ export declare class User {
     username: string;
     password: string;
     role: UserRole;
+    fullName: string;
+    age: string;
+    phone: string;
+    address: string;
+    congenitalDisease: string;
+    allergies: string;
+    bloodType: string;
+    weight: number;
+    height: number;
+    defaultMobilityStatus: string;
+    emergencyContactName: string;
+    emergencyContactPhone: string;
+    emergencyContactRelation: string;
 }

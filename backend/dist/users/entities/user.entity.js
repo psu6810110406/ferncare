@@ -21,6 +21,19 @@ let User = class User {
     username;
     password;
     role;
+    fullName;
+    age;
+    phone;
+    address;
+    congenitalDisease;
+    allergies;
+    bloodType;
+    weight;
+    height;
+    defaultMobilityStatus;
+    emergencyContactName;
+    emergencyContactPhone;
+    emergencyContactRelation;
 };
 exports.User = User;
 __decorate([
@@ -43,6 +56,58 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "fullName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "age", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "phone", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "address", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "congenitalDisease", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "allergies", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "bloodType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'float', nullable: true }),
+    __metadata("design:type", Number)
+], User.prototype, "weight", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'float', nullable: true }),
+    __metadata("design:type", Number)
+], User.prototype, "height", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "defaultMobilityStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "emergencyContactName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "emergencyContactPhone", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "emergencyContactRelation", void 0);
 exports.User = User = __decorate([
     (0, typeorm_1.Entity)('users')
 ], User);

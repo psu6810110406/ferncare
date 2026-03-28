@@ -65,4 +65,28 @@ export class UsersService {
       user: { id: user.id, username: user.username, role: user.role }
     };
   }
+
+  // --- 🌟 ส่วนที่เพิ่มใหม่สำหรับหน้า Profile 🌟 ---
+
+  // 5. ฟังก์ชันดึงข้อมูลโปรไฟล์ (ใช้ id ค้นหา และซ่อนรหัสผ่านไม่ให้ส่งกลับไป)
+  async findOneById(id: number): Promise<Partial<User>> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    
+    if (!user) {
+      throw new NotFoundException('ไม่พบข้อมูลผู้ใช้');
+    }
+
+    // แยก password ออกมา แล้วเอาข้อมูลส่วนที่เหลือ (result) ส่งกลับไป
+    const { password, ...result } = user;
+    return result;
+  }
+
+  // 6. ฟังก์ชันอัปเดตข้อมูลโปรไฟล์ (ชื่อ, อายุ, เบอร์, ที่อยู่)
+  async updateProfile(id: number, updateData: any) {
+    // สั่งอัปเดตข้อมูลลงฐานข้อมูล
+    await this.usersRepository.update(id, updateData);
+    
+    // ดึงข้อมูลที่อัปเดตเสร็จแล้วส่งกลับไปให้ Frontend
+    return this.findOneById(id);
+  }
 }

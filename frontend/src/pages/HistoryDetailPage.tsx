@@ -99,7 +99,7 @@ export default function HistoryDetailPage() {
         
         {/* Header ส่วนบน */}
         <div className="flex justify-between items-center mb-6">
-          <button onClick={() => navigate('/history')} className="text-gray-500 hover:text-[#1A4F90] flex items-center gap-1">
+          <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-[#1A4F90] flex items-center gap-1">
             <ArrowLeft size={20} /> ย้อนกลับ
           </button>
           

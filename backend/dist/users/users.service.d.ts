@@ -15,4 +15,6 @@ export declare class UsersService {
             role: import("./entities/user.entity").UserRole;
         };
     }>;
+    findOneById(id: number): Promise<Partial<User>>;
+    updateProfile(id: number, updateData: any): Promise<Partial<User>>;
 }

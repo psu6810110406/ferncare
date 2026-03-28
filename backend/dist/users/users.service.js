@@ -91,6 +91,18 @@ let UsersService = class UsersService {
             user: { id: user.id, username: user.username, role: user.role }
         };
     }
+    async findOneById(id) {
+        const user = await this.usersRepository.findOne({ where: { id } });
+        if (!user) {
+            throw new common_1.NotFoundException('ไม่พบข้อมูลผู้ใช้');
+        }
+        const { password, ...result } = user;
+        return result;
+    }
+    async updateProfile(id, updateData) {
+        await this.usersRepository.update(id, updateData);
+        return this.findOneById(id);
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([

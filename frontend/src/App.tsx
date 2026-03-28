@@ -7,7 +7,8 @@ import RegisterPage from './pages/RegisterPage'
 import BookingDetailsPage from './pages/BookingDetailsPage'
 import HistoryPage from './pages/HistoryPage';
 import HistoryDetailPage from './pages/HistoryDetailPage';
-import AdminDashboard from './pages/admin/AdminDashboardPage'; 
+import AdminDashboard from './pages/admin/AdminDashboardPage';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         {/* เมื่อมีคนพยายามไปหน้าเข้าสู่ระบบ หรือ สมัครสมาชิก */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
         {/* หน้ากรอกรายละเอียด (ที่เราเพิ่งสร้าง) */}
         <Route path="/booking-details" element={<BookingDetailsPage />} />
