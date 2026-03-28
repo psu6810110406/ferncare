@@ -6,4 +6,13 @@ export declare class UsersService {
     constructor(usersRepository: Repository<User>);
     create(createUserDto: CreateUserDto): Promise<User>;
     findOneByUsername(username: string): Promise<User | null>;
+    findAll(): Promise<Partial<User>[]>;
+    makeAdmin(id: number): Promise<{
+        message: string;
+        user: {
+            id: number;
+            username: string;
+            role: import("./entities/user.entity").UserRole;
+        };
+    }>;
 }

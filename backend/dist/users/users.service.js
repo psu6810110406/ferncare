@@ -67,12 +67,29 @@ let UsersService = class UsersService {
         const newUser = this.usersRepository.create({
             username,
             password: hashedPassword,
-            role,
+            role: role || 'user',
         });
         return this.usersRepository.save(newUser);
     }
     async findOneByUsername(username) {
         return this.usersRepository.findOne({ where: { username } });
+    }
+    async findAll() {
+        return this.usersRepository.find({
+            select: ['id', 'username', 'role']
+        });
+    }
+    async makeAdmin(id) {
+        const user = await this.usersRepository.findOne({ where: { id } });
+        if (!user) {
+            throw new common_1.NotFoundException(`หา User ID ${id} ไม่เจอครับ`);
+        }
+        user.role = 'admin';
+        await this.usersRepository.save(user);
+        return {
+            message: `เสร็จสิ้น! เปลี่ยนบัญชี ${user.username} เป็น Admin แล้ว!`,
+            user: { id: user.id, username: user.username, role: user.role }
+        };
     }
 };
 exports.UsersService = UsersService;
