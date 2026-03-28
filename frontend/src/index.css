@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* แอนิเมชันสำหรับหน้า Booking */
+@layer utilities {
+  .animate-fade-in-down { animation: fadeInDown 0.8s ease-out; }
+  .animate-fade-in-up { animation: fadeInUp 0.8s ease-out; }
+  .animate-fade-in { animation: fadeIn 1s ease-out 0.4s both; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
