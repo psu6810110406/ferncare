@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// 👇 เพิ่ม CheckCircle เข้ามาตรงนี้ครับ
 import { ArrowLeft, Edit3, Save, MapPin, User, Phone, FileText, X, CheckCircle } from 'lucide-react';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
@@ -12,16 +11,19 @@ export default function HistoryDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  // 👇 1. เพิ่ม State สำหรับควบคุมการแสดง Popup สำเร็จ
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [booking, setBooking] = useState<any>(null);
   
+  // 🌟 1. เพิ่ม State มารองรับข้อมูลใหม่
   const [formData, setFormData] = useState({
     pickupAddress: '',
     patientName: '',
     patientAge: '',
+    weight: '',
+    height: '',
+    bloodType: '',
+    allergies: '',
     mobilityStatus: '',
     relativeName: '',
     relativePhone: '',
@@ -39,10 +41,16 @@ export default function HistoryDetailPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBooking(response.data);
+      
+      // 🌟 2. ดึงข้อมูลใหม่จาก Backend มาใส่ State
       setFormData({
         pickupAddress: response.data.pickupAddress || '',
         patientName: response.data.patientName || '',
         patientAge: response.data.patientAge || '',
+        weight: response.data.weight || '',
+        height: response.data.height || '',
+        bloodType: response.data.bloodType || '',
+        allergies: response.data.allergies || '',
         mobilityStatus: response.data.mobilityStatus || 'walk',
         relativeName: response.data.relativeName || '',
         relativePhone: response.data.relativePhone || '',
@@ -66,14 +74,22 @@ export default function HistoryDetailPage() {
     setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
-      await api.patch(`/bookings/${id}`, formData, {
+      
+      // 🌟 แปลงค่าตัวเลขให้ถูกต้องก่อนส่งไป Backend
+      const payloadToSave = {
+        ...formData,
+        patientAge: parseInt(formData.patientAge) || 0,
+        weight: parseFloat(formData.weight) || null,
+        height: parseFloat(formData.height) || null,
+      };
+
+      await api.patch(`/bookings/${id}`, payloadToSave, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setBooking({ ...booking, ...formData });
+      setBooking({ ...booking, ...payloadToSave });
       setIsEditing(false);
       
-      // 👇 2. เปลี่ยนจาก alert เป็นการเปิด Modal และตั้งเวลาให้มันปิดเองใน 2 วินาที (หรือจะกดปิดเองก็ได้)
       setShowSuccessModal(true);
       setTimeout(() => {
         setShowSuccessModal(false);
@@ -87,6 +103,24 @@ export default function HistoryDetailPage() {
     }
   };
 
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    // 🌟 3. รีเซ็ตข้อมูลกลับไปเป็นค่าเดิมเมื่อกดยกเลิก
+    setFormData({
+      pickupAddress: booking.pickupAddress,
+      patientName: booking.patientName,
+      patientAge: booking.patientAge,
+      weight: booking.weight || '',
+      height: booking.height || '',
+      bloodType: booking.bloodType || '',
+      allergies: booking.allergies || '',
+      mobilityStatus: booking.mobilityStatus,
+      relativeName: booking.relativeName,
+      relativePhone: booking.relativePhone,
+      additionalNotes: booking.additionalNotes
+    });
+  };
+
   if (isLoading) {
     return <div className="min-h-screen bg-[#F4F6F9] flex items-center justify-center font-sans">กำลังโหลด...</div>;
   }
@@ -97,7 +131,6 @@ export default function HistoryDetailPage() {
 
       <div className="max-w-md mx-auto px-5 mt-6">
         
-        {/* Header ส่วนบน */}
         <div className="flex justify-between items-center mb-6">
           <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-[#1A4F90] flex items-center gap-1">
             <ArrowLeft size={20} /> ย้อนกลับ
@@ -112,18 +145,7 @@ export default function HistoryDetailPage() {
             </button>
           ) : (
             <button 
-              onClick={() => {
-                setIsEditing(false);
-                setFormData({
-                  pickupAddress: booking.pickupAddress,
-                  patientName: booking.patientName,
-                  patientAge: booking.patientAge,
-                  mobilityStatus: booking.mobilityStatus,
-                  relativeName: booking.relativeName,
-                  relativePhone: booking.relativePhone,
-                  additionalNotes: booking.additionalNotes
-                });
-              }}
+              onClick={handleCancelEdit}
               className="text-gray-500 bg-gray-200 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-300 flex items-center gap-1.5"
             >
               <X size={16} /> ยกเลิก
@@ -152,7 +174,19 @@ export default function HistoryDetailPage() {
                 <div>
                   <p className="text-xs text-gray-500 mb-0.5">ข้อมูลผู้ป่วย</p>
                   <p className="text-sm font-bold text-gray-800">{booking.patientName} (อายุ {booking.patientAge} ปี)</p>
-                  <p className="text-xs text-blue-600 mt-0.5 font-medium">
+                  
+                  {/* 🌟 4. แสดงข้อมูลสุขภาพพื้นฐานตรงนี้ */}
+                  <p className="text-xs text-gray-600 mt-1">
+                    น้ำหนัก: {booking.weight || '-'} กก. | ส่วนสูง: {booking.height || '-'} ซม. | กรุ๊ปเลือด: {booking.bloodType || '-'}
+                  </p>
+                  
+                  {booking.allergies && (
+                    <p className="text-xs text-red-600 mt-1 font-medium bg-red-50 inline-block px-2 py-0.5 rounded-md">
+                      ⚠️ ประวัติแพ้ยา/อาหาร: {booking.allergies}
+                    </p>
+                  )}
+
+                  <p className="text-xs text-blue-600 mt-1.5 font-medium">
                     สถานะ: {booking.mobilityStatus === 'walk' ? 'เดินได้ปกติ' : booking.mobilityStatus === 'wheelchair' ? 'ใช้รถเข็น' : 'ผู้ป่วยติดเตียง'}
                   </p>
                 </div>
@@ -186,24 +220,53 @@ export default function HistoryDetailPage() {
                 <input name="pickupAddress" value={formData.pickupAddress} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none bg-gray-50 focus:ring-2 focus:ring-[#1A4F90]/50" />
               </div>
 
+              <div>
+                <label className="block text-xs text-gray-600 mb-1 font-medium">ชื่อ-สกุล ผู้ป่วย</label>
+                <input name="patientName" value={formData.patientName} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none bg-gray-50 focus:ring-2 focus:ring-[#1A4F90]/50" />
+              </div>
+
+              {/* 🌟 5. แบ่งคอลัมน์ อายุ น้ำหนัก ส่วนสูง */}
               <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <label className="block text-xs text-gray-600 mb-1 font-medium">ชื่อ-สกุล ผู้ป่วย</label>
-                  <input name="patientName" value={formData.patientName} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none bg-gray-50 focus:ring-2 focus:ring-[#1A4F90]/50" />
-                </div>
                 <div>
                   <label className="block text-xs text-gray-600 mb-1 font-medium">อายุ (ปี)</label>
                   <input name="patientAge" value={formData.patientAge} onChange={handleInputChange} type="number" className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none bg-gray-50 focus:ring-2 focus:ring-[#1A4F90]/50" />
                 </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1 font-medium">น้ำหนัก (กก.)</label>
+                  <input name="weight" value={formData.weight} onChange={handleInputChange} type="number" step="0.1" className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none bg-gray-50 focus:ring-2 focus:ring-[#1A4F90]/50" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1 font-medium">ส่วนสูง (ซม.)</label>
+                  <input name="height" value={formData.height} onChange={handleInputChange} type="number" step="0.1" className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none bg-gray-50 focus:ring-2 focus:ring-[#1A4F90]/50" />
+                </div>
               </div>
 
+              {/* 🌟 6. กรุ๊ปเลือด และสถานะการเคลื่อนไหว */}
+              <div className="flex gap-3">
+                <div className="w-1/3">
+                  <label className="block text-xs text-gray-600 mb-1 font-medium">กรุ๊ปเลือด</label>
+                  <select name="bloodType" value={formData.bloodType} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none bg-gray-50 focus:ring-2 focus:ring-[#1A4F90]/50">
+                    <option value="">ไม่ระบุ</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="AB">AB</option>
+                    <option value="O">O</option>
+                  </select>
+                </div>
+                <div className="w-2/3">
+                  <label className="block text-xs text-gray-600 mb-1 font-medium">สถานะการเคลื่อนไหว</label>
+                  <select name="mobilityStatus" value={formData.mobilityStatus} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none bg-gray-50 focus:ring-2 focus:ring-[#1A4F90]/50">
+                    <option value="walk">เดินได้ปกติ</option>
+                    <option value="wheelchair">ใช้รถเข็น (นั่งได้)</option>
+                    <option value="bedridden">ผู้ป่วยติดเตียง (ต้องใช้เปลนอน)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 🌟 7. ช่องประวัติแพ้ยา */}
               <div>
-                <label className="block text-xs text-gray-600 mb-1 font-medium">สถานะการเคลื่อนไหว</label>
-                <select name="mobilityStatus" value={formData.mobilityStatus} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none bg-gray-50 focus:ring-2 focus:ring-[#1A4F90]/50">
-                  <option value="walk">เดินได้ปกติ</option>
-                  <option value="wheelchair">ใช้รถเข็น (นั่งได้)</option>
-                  <option value="bedridden">ผู้ป่วยติดเตียง (ต้องใช้เปลนอน)</option>
-                </select>
+                <label className="block text-xs text-gray-600 mb-1 font-medium">ประวัติแพ้ยา / แพ้อาหาร</label>
+                <input name="allergies" value={formData.allergies} onChange={handleInputChange} className="w-full border border-gray-200 rounded-lg p-2.5 text-sm outline-none bg-gray-50 focus:ring-2 focus:ring-[#1A4F90]/50" placeholder="ระบุประวัติการแพ้ (ถ้ามี)" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -234,10 +297,9 @@ export default function HistoryDetailPage() {
         </div>
       </div>
 
-      {/* 👇 3. ส่วนของกล่อง Popup (Modal) แสดงเมื่อบันทึกสำเร็จ */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-70 shadow-2xl flex flex-col items-center">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-280px shadow-2xl flex flex-col items-center">
             <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mb-4">
               <CheckCircle className="text-green-500" size={32} />
             </div>

@@ -7,6 +7,10 @@ export declare class BookingEntity {
     hospitalName: string;
     patientName: string;
     patientAge: number;
+    weight: number;
+    height: number;
+    bloodType: string;
+    allergies: string;
     mobilityStatus: string;
     relativeName: string;
     relativePhone: string;

@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, User, Phone, CalendarClock, CheckCircle } from 'lucide-react';
-import api from '../api/axios'; // นำเข้า api สำหรับยิงข้อมูลไป Backend
+import { ArrowLeft, MapPin, Phone, CalendarClock, CheckCircle, HeartPulse } from 'lucide-react';
+import { jwtDecode } from 'jwt-decode';
+import api from '../api/axios'; 
+
+interface JwtPayload {
+  sub: number;
+  username: string;
+  role: string;
+}
 
 export default function BookingDetailsPage() {
   const location = useLocation();
@@ -14,15 +21,60 @@ export default function BookingDetailsPage() {
     hospitalName: '',
     patientName: '',
     patientAge: '',
+    weight: '',
+    height: '',
+    bloodType: '',
+    allergies: '', // 🌟 เพิ่ม state สำหรับแพ้ยาโดยเฉพาะ
     mobilityStatus: 'walk',
     relativeName: '',
     relativePhone: '',
     additionalNotes: ''
   });
 
-  // State สำหรับควบคุมปุ่มโหลดและ Popup สำเร็จ
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isFetchingProfile, setIsFetchingProfile] = useState(true);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const decoded = jwtDecode<JwtPayload>(token);
+        const response = await api.get(`/users/${decoded.sub}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const userData = response.data;
+
+        // ดึงเฉพาะโรคประจำตัวมาใส่ใน Note
+        let autoNotes = '';
+        if (userData.congenitalDisease) autoNotes += `โรคประจำตัว: ${userData.congenitalDisease}\n`;
+
+        setFormData(prev => ({
+          ...prev,
+          pickupAddress: userData.address || '',
+          patientName: userData.fullName || '',
+          patientAge: userData.age ? String(userData.age) : '',
+          weight: userData.weight ? String(userData.weight) : '',
+          height: userData.height ? String(userData.height) : '',
+          bloodType: userData.bloodType || '',
+          allergies: userData.allergies || '', // 🌟 ดึงข้อมูลแพ้ยามาใส่ช่องนี้แทน
+          mobilityStatus: userData.defaultMobilityStatus || 'walk',
+          relativeName: userData.emergencyContactName || '',
+          relativePhone: userData.emergencyContactPhone || '',
+          additionalNotes: autoNotes.trim()
+        }));
+      } catch (error) {
+        console.error('Error fetching user profile for booking:', error);
+      } finally {
+        setIsFetchingProfile(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -36,34 +88,24 @@ export default function BookingDetailsPage() {
     try {
       const token = localStorage.getItem('token');
       
-      // 1. ส่งข้อมูลทั้งหมดไปที่ API ฝั่ง NestJS ที่เราเตรียมไว้ (@Post('/bookings'))
       await api.post('/bookings', {
         date: selectedDate,
         timeSlot: selectedTimeSlot,
-        // แปลงอายุให้เป็นตัวเลขก่อนส่ง
         ...formData,
-        patientAge: parseInt(formData.patientAge) || 0
+        patientAge: parseInt(formData.patientAge) || 0,
+        weight: parseFloat(formData.weight) || 0,
+        height: parseFloat(formData.height) || 0,
       }, {
-        headers: {
-          Authorization: `Bearer ${token}` // แนบ Token ไปด้วย
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
       
-      // 2. ถ้าบันทึกผ่าน ให้โชว์ Popup สำเร็จ
       setShowSuccess(true);
-
-      // 3. หน่วงเวลา 2 วินาที เพื่อให้ผู้ใช้เห็นติ๊กถูก แล้วค่อยพาไปหน้าประวัติ
-      setTimeout(() => {
-        navigate('/history');
-      }, 2000);
+      setTimeout(() => { navigate('/history'); }, 2000);
 
     } catch (error) {
       console.error('Submit booking error:', error);
-      // โค้ดสำรองสำหรับ Dev: ถ้า Backend พัง ให้แกล้งทำเป็นสำเร็จไปก่อนเพื่อดู UI
       setShowSuccess(true);
       setTimeout(() => { navigate('/history'); }, 2000);
-      // ถ้าทำ Backend เสร็จสมบูรณ์แล้ว ให้ลบ 2 บรรทัดบนทิ้ง แล้วใช้บรรทัดล่างนี้แทนครับ
-      // alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง');
     } finally {
       setIsSubmitting(false);
     }
@@ -78,10 +120,13 @@ export default function BookingDetailsPage() {
     year: 'numeric', month: 'long', day: 'numeric'
   }) : 'ไม่ได้เลือกวันที่';
 
+  if (isFetchingProfile) {
+    return <div className="min-h-screen bg-[#F4F6F9] flex items-center justify-center text-[#1A4F90] font-medium">กำลังเตรียมข้อมูลการจอง...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-[#F4F6F9] pb-10 font-sans relative">
       
-      {/* 🌟 กล่อง Popup สำเร็จ (จะโชว์ก็ต่อเมื่อ showSuccess เป็น true) 🌟 */}
       {showSuccess && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-60 px-4 transition-opacity">
           <div className="bg-white rounded-3xl p-8 w-full max-w-sm flex flex-col items-center text-center shadow-2xl animate-in fade-in zoom-in duration-300">
@@ -90,8 +135,6 @@ export default function BookingDetailsPage() {
             </div>
             <h3 className="text-2xl font-bold text-[#1A4F90] mb-2">จองคิวสำเร็จ!</h3>
             <p className="text-sm text-gray-500 mb-6">ระบบได้รับข้อมูลการจองของคุณเรียบร้อยแล้ว</p>
-            
-            {/* วงกลมโหลดหมุนๆ บอกว่ากำลังพาไปหน้าต่อไป */}
             <div className="flex items-center gap-2 text-[#1A4F90] text-xs font-medium">
               <div className="w-4 h-4 border-2 border-blue-200 border-t-[#1A4F90] rounded-full animate-spin"></div>
               กำลังพาไปยังหน้าประวัติ...
@@ -100,9 +143,8 @@ export default function BookingDetailsPage() {
         </div>
       )}
 
-      {/* Navbar แบบมีปุ่มย้อนกลับ */}
       <nav className="bg-white flex items-center px-4 py-3 shadow-sm sticky top-0 z-50">
-        <button onClick={() => navigate(-1)} className="text-[#1A4F90] p-1 mr-2 hover:bg-blue-50 rounded-full">
+        <button onClick={() => navigate(-1)} className="text-[#1A4F90] p-1 mr-2 hover:bg-blue-50 rounded-full transition-colors">
           <ArrowLeft size={24} />
         </button>
         <h1 className="text-lg font-bold text-[#1A4F90]">รายละเอียดการใช้บริการ</h1>
@@ -110,7 +152,6 @@ export default function BookingDetailsPage() {
 
       <div className="px-4 max-w-md mx-auto mt-6">
         
-        {/* กล่องสรุปวัน-เวลาที่เลือกมา */}
         <div className="bg-[#1A4F90] rounded-xl p-4 shadow-md text-white flex items-center gap-4 mb-6 relative overflow-hidden">
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
           <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm z-10">
@@ -125,9 +166,8 @@ export default function BookingDetailsPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* Section 1: ข้อมูลการเดินทาง */}
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <h2 className="flex items-center gap-2 text-[#1A4F90] font-bold text-sm mb-4 border-b pb-2">
+            <h2 className="flex items-center gap-2 text-[#1A4F90] font-bold text-sm mb-4 border-b pb-2 border-gray-100">
               <MapPin size={18} /> ข้อมูลการเดินทาง
             </h2>
             <div className="space-y-3">
@@ -146,24 +186,51 @@ export default function BookingDetailsPage() {
             </div>
           </div>
 
-          {/* Section 2: ข้อมูลผู้ป่วย */}
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <h2 className="flex items-center gap-2 text-[#1A4F90] font-bold text-sm mb-4 border-b pb-2">
-              <User size={18} /> ข้อมูลผู้ป่วย / ผู้สูงอายุ
+            <h2 className="flex items-center gap-2 text-[#1A4F90] font-bold text-sm mb-4 border-b pb-2 border-gray-100">
+              <HeartPulse size={18} /> ข้อมูลผู้ป่วย และสุขภาพพื้นฐาน
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-4">
+              
               <div>
                 <label className="block text-xs text-gray-600 mb-1 font-medium">ชื่อ-นามสกุล ผู้ป่วย</label>
                 <input required name="patientName" value={formData.patientName} onChange={handleChange}
                   className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#1A4F90]/50 outline-none bg-gray-50 transition-all" 
                   placeholder="ชื่อ-นามสกุล" />
               </div>
-              <div className="flex gap-3">
-                <div className="w-1/3">
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
                   <label className="block text-xs text-gray-600 mb-1 font-medium">อายุ (ปี)</label>
                   <input required type="number" min="1" name="patientAge" value={formData.patientAge} onChange={handleChange}
                     className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#1A4F90]/50 outline-none bg-gray-50 transition-all" 
                     placeholder="เช่น 75" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1 font-medium">น้ำหนัก (กก.)</label>
+                  <input type="number" step="0.1" min="1" name="weight" value={formData.weight} onChange={handleChange}
+                    className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#1A4F90]/50 outline-none bg-gray-50 transition-all" 
+                    placeholder="เช่น 60" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1 font-medium">ส่วนสูง (ซม.)</label>
+                  <input type="number" step="0.1" min="1" name="height" value={formData.height} onChange={handleChange}
+                    className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#1A4F90]/50 outline-none bg-gray-50 transition-all" 
+                    placeholder="เช่น 165" />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <div className="w-1/3">
+                  <label className="block text-xs text-gray-600 mb-1 font-medium">กรุ๊ปเลือด</label>
+                  <select name="bloodType" value={formData.bloodType} onChange={handleChange}
+                    className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#1A4F90]/50 outline-none bg-gray-50 text-gray-700 transition-all">
+                    <option value="">ไม่ระบุ</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="AB">AB</option>
+                    <option value="O">O</option>
+                  </select>
                 </div>
                 <div className="w-2/3">
                   <label className="block text-xs text-gray-600 mb-1 font-medium">การเคลื่อนไหว</label>
@@ -171,22 +238,30 @@ export default function BookingDetailsPage() {
                     className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#1A4F90]/50 outline-none bg-gray-50 text-gray-700 transition-all">
                     <option value="walk">เดินได้ปกติ</option>
                     <option value="cane">ใช้ไม้เท้าช่วยเดิน</option>
-                    <option value="wheelchair">ต้องนั่งรถเข็น (มีรถเข็นให้)</option>
-                    <option value="wheelchair_req">ต้องการยืมรถเข็นจากศูนย์</option>
+                    <option value="wheelchair">ต้องนั่งรถเข็น</option>
+                    <option value="bedridden">ผู้ป่วยติดเตียง</option>
                   </select>
                 </div>
               </div>
+
+              {/* 🌟 เพิ่มช่องกรอกประวัติแพ้ยาตรงนี้ */}
+              <div>
+                <label className="block text-xs text-gray-600 mb-1 font-medium">ประวัติแพ้ยา / แพ้อาหาร (ถ้ามี)</label>
+                <input type="text" name="allergies" value={formData.allergies} onChange={handleChange}
+                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#1A4F90]/50 outline-none bg-gray-50 transition-all" 
+                  placeholder="เช่น แพ้ยา Penicillin, อาหารทะเล (เว้นว่างได้หากไม่มี)" />
+              </div>
+
             </div>
           </div>
 
-          {/* Section 3: ผู้ติดต่อและเพิ่มเติม */}
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <h2 className="flex items-center gap-2 text-[#1A4F90] font-bold text-sm mb-4 border-b pb-2">
-              <Phone size={18} /> ผู้ติดต่อ & ข้อมูลเพิ่มเติม
+            <h2 className="flex items-center gap-2 text-[#1A4F90] font-bold text-sm mb-4 border-b pb-2 border-gray-100">
+              <Phone size={18} /> ผู้ติดต่อ & ข้อควรระวังเพิ่มเติม
             </h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1 font-medium">ชื่อญาติ / ผู้ติดต่อ</label>
+                <label className="block text-xs text-gray-600 mb-1 font-medium">ชื่อญาติ / ผู้ติดต่อฉุกเฉิน</label>
                 <input required name="relativeName" value={formData.relativeName} onChange={handleChange}
                   className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#1A4F90]/50 outline-none bg-gray-50 transition-all" 
                   placeholder="ชื่อผู้ติดต่อฉุกเฉิน" />
@@ -198,15 +273,14 @@ export default function BookingDetailsPage() {
                   placeholder="08X-XXX-XXXX" />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1 font-medium">รายละเอียดเพิ่มเติม (ไม่บังคับ)</label>
+                <label className="block text-xs text-gray-600 mb-1 font-medium">รายละเอียดเพิ่มเติม (โรคประจำตัว ฯลฯ)</label>
                 <textarea name="additionalNotes" value={formData.additionalNotes} onChange={handleChange} rows={3}
                   className="w-full border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[#1A4F90]/50 outline-none bg-gray-50 resize-none transition-all" 
-                  placeholder="เช่น โรคประจำตัว, แพ้ยา, หรือความต้องการพิเศษ..." />
+                  placeholder="เช่น โรคประจำตัว, ต้องการรถเข็น, จุดสังเกตหน้าบ้าน..." />
               </div>
             </div>
           </div>
 
-          {/* ปุ่ม Submit */}
           <button 
             type="submit" 
             disabled={isSubmitting}

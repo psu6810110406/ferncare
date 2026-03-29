@@ -9,4 +9,8 @@ export declare class CreateBookingDto {
     relativeName: string;
     relativePhone: string;
     additionalNotes?: string;
+    weight?: number;
+    height?: number;
+    bloodType?: string;
+    allergies?: string;
 }

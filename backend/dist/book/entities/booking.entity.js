@@ -20,6 +20,10 @@ let BookingEntity = class BookingEntity {
     hospitalName;
     patientName;
     patientAge;
+    weight;
+    height;
+    bloodType;
+    allergies;
     mobilityStatus;
     relativeName;
     relativePhone;
@@ -60,6 +64,22 @@ __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)
 ], BookingEntity.prototype, "patientAge", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'float', nullable: true }),
+    __metadata("design:type", Number)
+], BookingEntity.prototype, "weight", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'float', nullable: true }),
+    __metadata("design:type", Number)
+], BookingEntity.prototype, "height", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], BookingEntity.prototype, "bloodType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], BookingEntity.prototype, "allergies", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)

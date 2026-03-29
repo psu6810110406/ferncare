@@ -8,13 +8,11 @@ export class BookingEntity { // ใช้ชื่อ BookingEntity ให้ต
   @Column({ nullable: true })
   userId: number; // เก็บ ID ของคนที่ล็อกอิน
 
-  // --- 2 ตัวนี้คือตัวที่ทำให้เกิด Error ถ้าไม่มีครับ ---
   @Column()
   date: string; // เก็บวันที่
 
   @Column()
   timeSlot: string; // เก็บช่วงเวลา
-  // ----------------------------------------
 
   @Column({ nullable: true })
   pickupAddress: string;
@@ -27,6 +25,20 @@ export class BookingEntity { // ใช้ชื่อ BookingEntity ให้ต
 
   @Column({ nullable: true })
   patientAge: number;
+
+  // 👇 🌟 เพิ่ม 4 ฟิลด์ใหม่ตรงนี้ครับ (ให้เป็น nullable: true ไว้ เผื่อบางคนไม่ได้กรอก) 👇
+  @Column({ type: 'float', nullable: true })
+  weight: number;
+
+  @Column({ type: 'float', nullable: true })
+  height: number;
+
+  @Column({ nullable: true })
+  bloodType: string;
+
+  @Column({ nullable: true })
+  allergies: string;
+  // 👆 ---------------------------------------------------------------- 👆
 
   @Column({ nullable: true })
   mobilityStatus: string;

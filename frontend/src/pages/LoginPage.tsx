@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   return (
     // เปลี่ยนเป็นพื้นหลังเต็มจอ สีครีม (#FAF6F1) ลบกรอบมือถือทิ้งทั้งหมด
-    <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#F4F6F9] flex items-center justify-center p-4">
       
       {/* กล่องล็อกอินสีขาว จัดให้อยู่ตรงกลาง */}
       <div className="bg-white rounded-3xl shadow-lg p-8 w-full max-w-md flex flex-col items-center">
