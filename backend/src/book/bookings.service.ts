@@ -1,14 +1,19 @@
+// src/book/bookings.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not } from 'typeorm'; // 🌟 เพิ่ม Not เข้ามาตรงนี้ครับ
+import { Repository, Not } from 'typeorm';
 import { BookingEntity } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
+// 🌟 1. Import HolidayService เข้ามา
+import { HolidayService } from '../holiday/holiday.service'; 
 
 @Injectable()
 export class BookingsService {
   constructor(
     @InjectRepository(BookingEntity)
     private readonly bookingRepository: Repository<BookingEntity>,
+    // 🌟 2. Inject HolidayService เข้ามาใน Constructor
+    private readonly holidayService: HolidayService, 
   ) {}
 
   async findAll(): Promise<BookingEntity[]> {
@@ -31,6 +36,15 @@ export class BookingsService {
 
   // --- 🌟 อัปเดตฟังก์ชันตรวจสอบคิวว่างที่นี่ครับ ---
   async checkAvailability(date: string, timeSlot: string): Promise<boolean> {
+    
+    // 🌟 3. เช็คก่อนเป็นอันดับแรก: วันนี้ตรงกับวันหยุดที่แอดมินตั้งไว้หรือไม่?
+    const isHoliday = await this.holidayService.isHoliday(date);
+    if (isHoliday) {
+      // ถ้าเป็นวันหยุด คืนค่า false ทันที (บอกระบบว่า "ไม่ว่าง")
+      return false; 
+    }
+
+    // --- ถ้าไม่ใช่วันหยุด ค่อยมาเช็คคิวปกติของคุณ ---
     // 1. ดึงคิวของ "วันที่เลือก" ที่ "ไม่ได้ถูกยกเลิก" ออกมาทั้งหมด
     const bookingsOnDate = await this.bookingRepository.find({
       where: { 
@@ -49,22 +63,17 @@ export class BookingsService {
 
     if (timeSlot === 'fullday') {
       // กรณีลูกค้าอยากจอง "เต็มวัน"
-      // ถ้ามีคิวใดๆ (เช้า, บ่าย หรือ เต็มวัน) อยู่ในระบบแล้ว ถือว่าชนทันที! ไม่ให้จอง
       isConflict = bookingsOnDate.length > 0;
     } 
     else if (timeSlot === 'morning') {
       // กรณีลูกค้าอยากจอง "เช้า"
-      // จะชนก็ต่อเมื่อ มีคนจอง "เช้า" ไปแล้ว หรือมีคนเหมา "เต็มวัน" ไปแล้ว
       isConflict = bookingsOnDate.some(b => b.timeSlot === 'morning' || b.timeSlot === 'fullday');
     } 
     else if (timeSlot === 'afternoon') {
       // กรณีลูกค้าอยากจอง "บ่าย"
-      // จะชนก็ต่อเมื่อ มีคนจอง "บ่าย" ไปแล้ว หรือมีคนเหมา "เต็มวัน" ไปแล้ว
       isConflict = bookingsOnDate.some(b => b.timeSlot === 'afternoon' || b.timeSlot === 'fullday');
     }
 
-    // ถ้า isConflict เป็น true (ชน) เราต้องส่งกลับไปว่า ไม่ว่าง (false)
-    // ถ้า isConflict เป็น false (ไม่ชน) เราต้องส่งกลับไปว่า ว่าง (true)
     return !isConflict;
   }
 

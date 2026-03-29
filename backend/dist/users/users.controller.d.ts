@@ -11,6 +11,7 @@ export declare class UsersController {
             id: number;
             username: string;
             role: import("./entities/user.entity").UserRole;
+            profileImageUrl: string;
             fullName: string;
             age: string;
             phone: string;

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react'; // 🌟 Import useRef เพิ่ม
 import { useNavigate } from 'react-router-dom';
 import { 
   User, Phone, MapPin, Save, ArrowLeft, Calendar, 
   Heart, Activity, AlertCircle, Scale, Ruler, Droplet, Accessibility,
-  Edit, X // 🌟 Import ไอคอน Edit และ X เพิ่มเข้ามา
+  Edit, X, Check, Camera // 🌟 1. Import Camera เพิ่มเข้ามา
 } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
 import api from '../api/axios';
@@ -29,9 +29,15 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState<number | null>(null);
 
   const [activeTab, setActiveTab] = useState<'personal' | 'health' | 'emergency'>('personal');
-  
-  // 🌟 1. เพิ่ม State สำหรับจัดการโหมดแก้ไข
   const [isEditing, setIsEditing] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // 🌟 2. เพิ่ม State สำหรับจัดการรูปโปรไฟล์
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [addressData, setAddressData] = useState<AddressItem[]>([]);
 
@@ -56,7 +62,6 @@ export default function ProfilePage() {
     emergencyContactRelation: ''
   });
 
-  // 🌟 2. เพิ่ม State สำหรับเก็บข้อมูลต้นฉบับ (เวลายกเลิกจะได้คืนค่าเดิมได้)
   const [originalData, setOriginalData] = useState(formData);
 
   useEffect(() => {
@@ -85,7 +90,7 @@ export default function ProfilePage() {
 
       const data = response.data;
       const loadedData = {
-        ...formData, // คงค่า default ไว้เผื่อฟิลด์ไหน API ส่งมาเป็น null
+        ...formData, 
         username: data.username || '',
         fullName: data.fullName || '',
         age: data.age || '',
@@ -103,7 +108,14 @@ export default function ProfilePage() {
       };
 
       setFormData(loadedData);
-      setOriginalData(loadedData); // 🌟 เก็บสำเนาข้อมูลไว้ด้วย
+      setOriginalData(loadedData); 
+      
+      // 🌟 ดึงรูปภาพโปรไฟล์เดิมจาก Backend (ถ้ามี) สมมติว่าส่งมาชื่อ profileImageUrl
+      if (data.profileImageUrl) {
+        setPreviewImage(data.profileImageUrl);
+        setOriginalImage(data.profileImageUrl);
+      }
+
     } catch (error) {
       console.error('Error fetching profile:', error);
       alert('ไม่สามารถดึงข้อมูลโปรไฟล์ได้ กรุณาล็อกอินใหม่');
@@ -113,46 +125,51 @@ export default function ProfilePage() {
     }
   };
 
+  // 🌟 3. ฟังก์ชันจัดการเมื่อเลือกรูปภาพใหม่
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file); // เก็บไฟล์ตัวจริงไว้เตรียมส่งให้ Backend
+      setPreviewImage(URL.createObjectURL(file)); // สร้าง URL จำลองเพื่อแสดงให้ผู้ใช้เห็นทันที
+      
+      // แปลงไฟล์เป็น Base64 เพื่อส่งไปให้ Backend
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageBase64(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
     if (['age', 'weight', 'height'].includes(name)) {
       if (Number(value) < 0) return;
     }
-
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
-
       if (name === 'province') {
-        newData.district = '';
-        newData.subDistrict = '';
-        newData.zipCode = '';
+        newData.district = ''; newData.subDistrict = ''; newData.zipCode = '';
       }
-      
       if (name === 'district') {
-        newData.subDistrict = '';
-        newData.zipCode = '';
+        newData.subDistrict = ''; newData.zipCode = '';
       }
-
       if (name === 'subDistrict' && newData.province && newData.district) {
         const matchedItem = addressData.find(
-          item => 
-            item.province === newData.province && 
-            item.amphoe === newData.district && 
-            item.district === value
+          item => item.province === newData.province && item.amphoe === newData.district && item.district === value
         );
         newData.zipCode = matchedItem ? String(matchedItem.zipcode) : '';
       }
-
       return newData;
     });
   };
+
+  // ... (โค้ดด้านบนของคุณเหมือนเดิมจนถึงก่อน handleSave) ...
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -160,7 +177,7 @@ export default function ProfilePage() {
       const token = localStorage.getItem('token');
       const fullAddress = `${formData.addressDetail} ต.${formData.subDistrict} อ.${formData.district} จ.${formData.province} ${formData.zipCode}`.trim();
 
-      const payload = {
+      const payload: any = {
         fullName: formData.fullName,
         age: formData.age ? parseInt(formData.age, 10) : null, 
         phone: formData.phone,
@@ -173,16 +190,29 @@ export default function ProfilePage() {
         defaultMobilityStatus: formData.defaultMobilityStatus,
         emergencyContactName: formData.emergencyContactName,
         emergencyContactPhone: formData.emergencyContactPhone,
-        emergencyContactRelation: formData.emergencyContactRelation
+        emergencyContactRelation: formData.emergencyContactRelation,
       };
 
+      // 🌟 ส่งรูปเฉพาะตอนที่มีการเลือกรูปใหม่เท่านั้น (ป้องกันการทับรูปเดิมด้วยค่าว่าง)
+      if (imageBase64) {
+        payload.profileImageUrl = imageBase64;
+      }
+
+      console.log('ข้อมูลที่จะส่งไปให้ Backend:', payload); // เอาไว้เช็คว่ารูปถูกส่งไปไหม
+
+      // ยิง API บันทึกข้อมูล
       await api.patch(`/users/${userId}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setOriginalData(formData); // 🌟 อัปเดตข้อมูลต้นฉบับใหม่เมื่อเซฟผ่าน
-      setIsEditing(false); // 🌟 ปิดโหมดแก้ไข
-      alert('บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว!');
+      // 🌟 อัปเดตข้อมูลต้นฉบับทั้งหมด เพื่อให้หน้าเว็บจำค่าใหม่ล่าสุด
+      setOriginalData(formData); 
+      setOriginalImage(previewImage); // 👈 สำคัญมาก: จำรูปใหม่ไว้เป็นรูปต้นฉบับ
+      setImageBase64(null); // ล้างค่ารูปที่เตรียมส่งทิ้งไป (เพราะส่งไปแล้ว)
+      
+      setIsEditing(false); 
+      setShowSuccessModal(true);
+      
     } catch (error) {
       console.error('Error updating profile:', error);
       alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
@@ -191,10 +221,13 @@ export default function ProfilePage() {
     }
   };
 
-  // 🌟 3. ฟังก์ชันยกเลิกการแก้ไข
   const handleCancel = () => {
-    setFormData(originalData); // คืนค่าข้อมูลเดิม
-    setIsEditing(false); // ปิดโหมดแก้ไข
+    setFormData(originalData); 
+    // 🌟 คืนค่ารูปภาพพรีวิวกลับไปเป็นรูปเดิม (ดึงจาก originalImage)
+    setPreviewImage(originalImage); 
+    setImageBase64(null);
+    setSelectedFile(null);
+    setIsEditing(false); 
   };
 
   const availableProvinces = Array.from(new Set(addressData.map(item => item.province))).sort();
@@ -216,13 +249,36 @@ export default function ProfilePage() {
     return <div className="min-h-screen bg-[#F4F6F9] flex items-center justify-center">กำลังโหลดข้อมูล...</div>;
   }
 
+  // -------------------------------------------------------------
+  // ส่วน UI ด้านล่าง (return) ยังคงเหมือนเดิมที่คุณเขียนไว้เป๊ะเลยครับ!
+  // -------------------------------------------------------------
+  
   return (
     <div className="min-h-screen bg-[#F4F6F9] font-sans pb-10 relative">
       <Navbar />
 
+      {/* กล่อง Popup บันทึกสำเร็จ */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl flex flex-col items-center text-center animate-in zoom-in duration-200">
+            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-5 border-[6px] border-green-100">
+              <Check size={40} className="text-green-500" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">บันทึกสำเร็จ!</h3>
+            <p className="text-sm text-gray-500 mb-8">ข้อมูลโปรไฟล์ของคุณถูกอัปเดตเรียบร้อยแล้ว</p>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full bg-[#1A4F90] text-white py-3.5 rounded-xl text-sm font-bold hover:bg-[#153f72] transition-colors shadow-md"
+            >
+              ตกลง
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-md mx-auto px-5 mt-6">
         
-        {/* 🌟 Header & ปุ่ม Edit */}
+        {/* Header & ปุ่ม Edit */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-[#1A4F90] transition-colors p-2 bg-white rounded-full shadow-sm border border-gray-100">
@@ -241,13 +297,42 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-4 flex items-center gap-4">
-          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-[#1A4F90] shrink-0 border-2 border-blue-100">
-            <User size={30} />
+        {/* 🌟 5. ปรับปรุง UI ส่วนหัว เพื่อรองรับการเปลี่ยนรูปภาพ */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-4 flex items-center gap-5">
+          
+          <div className="relative">
+            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-[#1A4F90] shrink-0 border-4 border-blue-50 overflow-hidden shadow-sm">
+              {previewImage ? (
+                <img src={previewImage} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <User size={36} />
+              )}
+            </div>
+
+            {/* แสดงปุ่มไอคอนกล้องถ่ายรูป เมื่ออยู่ในโหมดแก้ไขเท่านั้น */}
+            {isEditing && (
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 bg-[#1A4F90] text-white p-2 rounded-full shadow-md hover:bg-blue-800 transition-colors border-2 border-white"
+                title="เปลี่ยนรูปโปรไฟล์"
+              >
+                <Camera size={14} />
+              </button>
+            )}
+
+            {/* Input ซ่อนไว้สำหรับเลือกไฟล์รูปภาพ */}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleImageChange}
+            />
           </div>
+
           <div>
-            <h2 className="text-lg font-bold text-gray-800">{formData.fullName || `@${formData.username}`}</h2>
-            <p className="text-sm text-gray-500">{isEditing ? 'กำลังแก้ไขข้อมูล...' : 'จัดการข้อมูลส่วนตัวและข้อมูลสุขภาพ'}</p>
+            <h2 className="text-xl font-bold text-gray-800">{formData.fullName || `@${formData.username}`}</h2>
+            <p className="text-sm text-gray-500 mt-0.5">{isEditing ? 'กำลังแก้ไขข้อมูล...' : 'จัดการข้อมูลส่วนตัวและสุขภาพ'}</p>
           </div>
         </div>
 
@@ -485,7 +570,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* 🌟 แสดงปุ่มบันทึก/ยกเลิก เฉพาะตอนที่อยู่ในโหมดแก้ไข (isEditing = true) */}
+          {/* ปุ่มบันทึก/ยกเลิก เฉพาะตอนแก้ไข */}
           {isEditing && (
             <div className="flex gap-3 mt-8">
               <button 

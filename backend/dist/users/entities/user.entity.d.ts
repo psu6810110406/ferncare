@@ -7,6 +7,7 @@ export declare class User {
     username: string;
     password: string;
     role: UserRole;
+    profileImageUrl: string;
     fullName: string;
     age: string;
     phone: string;

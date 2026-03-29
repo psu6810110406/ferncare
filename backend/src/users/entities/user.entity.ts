@@ -24,6 +24,11 @@ export class User {
   })
   role: UserRole;
 
+  // 📸 --- รูปโปรไฟล์ (เก็บเป็น Base64 String) --- 📸
+  // 🌟 แก้ตรงนี้: เพิ่ม type: 'text' เพื่อให้เก็บข้อความยาวๆ ของรูปภาพได้
+  @Column({ type: 'text', nullable: true }) 
+  profileImageUrl: string; 
+
   // 🌟 --- ข้อมูลส่วนตัวพื้นฐาน --- 🌟
   @Column({ nullable: true })
   fullName: string;

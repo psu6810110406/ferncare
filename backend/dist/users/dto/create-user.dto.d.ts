@@ -3,6 +3,7 @@ export declare class CreateUserDto {
     username: string;
     password: string;
     role?: UserRole;
+    profileImageUrl?: string;
     fullName?: string;
     age?: number;
     phone?: string;

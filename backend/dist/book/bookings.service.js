@@ -17,10 +17,13 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const booking_entity_1 = require("./entities/booking.entity");
+const holiday_service_1 = require("../holiday/holiday.service");
 let BookingsService = class BookingsService {
     bookingRepository;
-    constructor(bookingRepository) {
+    holidayService;
+    constructor(bookingRepository, holidayService) {
         this.bookingRepository = bookingRepository;
+        this.holidayService = holidayService;
     }
     async findAll() {
         return this.bookingRepository.find({
@@ -38,6 +41,10 @@ let BookingsService = class BookingsService {
         });
     }
     async checkAvailability(date, timeSlot) {
+        const isHoliday = await this.holidayService.isHoliday(date);
+        if (isHoliday) {
+            return false;
+        }
         const bookingsOnDate = await this.bookingRepository.find({
             where: {
                 date: date,
@@ -78,6 +85,7 @@ exports.BookingsService = BookingsService;
 exports.BookingsService = BookingsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(booking_entity_1.BookingEntity)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        holiday_service_1.HolidayService])
 ], BookingsService);
 //# sourceMappingURL=bookings.service.js.map

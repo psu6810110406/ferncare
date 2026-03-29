@@ -11,6 +11,11 @@ export class CreateUserDto {
   @IsOptional()
   role?: UserRole; // ใส่ ? แปลว่าไม่ส่งมาก็ได้ (ถ้าไม่ส่งมาจะถูกตั้งเป็น USER อัตโนมัติจาก Entity)
 
+  // 📸 --- รูปโปรไฟล์ (เก็บเป็นข้อความ Base64) --- 📸
+  @IsOptional()
+  @IsString()
+  profileImageUrl?: string; 
+
   // 🌟 --- ข้อมูลโปรไฟล์ที่เพิ่มเข้ามาใหม่ --- 🌟
   @IsOptional()
   @IsString()

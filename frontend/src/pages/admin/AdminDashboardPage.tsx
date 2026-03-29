@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, X, Clock, MapPin, User, FileText, Filter, Trash2, AlertTriangle } from 'lucide-react';
+import { Check, X, Clock, MapPin, User, FileText, Filter, Trash2, AlertTriangle, Search, Calendar } from 'lucide-react'; // 🌟 1. เพิ่ม Search, Calendar เข้ามา
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
 
@@ -17,11 +17,14 @@ interface Booking {
 export default function AdminDashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // 🌟 2. เพิ่ม State สำหรับเก็บค่าตัวกรองใหม่
   const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
 
   const navigate = useNavigate();
 
-  // 🌟 State สำหรับควบคุมกล่อง Popup ยืนยัน
   const [actionModal, setActionModal] = useState<{
     isOpen: boolean;
     type: 'confirmed' | 'cancelled' | 'delete' | null;
@@ -48,7 +51,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // 🌟 ฟังก์ชันทำงานเมื่อกดปุ่ม "ตกลง" ในกล่อง Popup
   const handleConfirmAction = async () => {
     if (!actionModal.bookingId || !actionModal.type) return;
     
@@ -58,13 +60,11 @@ export default function AdminDashboardPage() {
       const { bookingId, type } = actionModal;
 
       if (type === 'delete') {
-        // กรณีลบทิ้งถาวร
         await api.delete(`/bookings/${bookingId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setBookings(prev => prev.filter(b => b.id !== bookingId));
       } else {
-        // กรณียืนยัน หรือ ยกเลิก
         await api.patch(`/bookings/${bookingId}`, { status: type }, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -75,11 +75,10 @@ export default function AdminDashboardPage() {
       alert('เกิดข้อผิดพลาดในการดำเนินการ');
     } finally {
       setIsProcessing(false);
-      setActionModal({ isOpen: false, type: null, bookingId: null }); // ปิด Popup
+      setActionModal({ isOpen: false, type: null, bookingId: null }); 
     }
   };
 
-  // ฟังก์ชันช่วยดึงหน้าตาของ Popup ตามประเภทการกระทำ
   const getModalConfig = () => {
     switch (actionModal.type) {
       case 'confirmed':
@@ -93,7 +92,23 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const filteredBookings = bookings.filter(b => statusFilter === 'all' ? true : b.status === statusFilter);
+  // 🌟 3. อัปเดตตรรกะการคัดกรองข้อมูลให้รองรับ 3 เงื่อนไขพร้อมกัน
+  const filteredBookings = bookings.filter(b => {
+    // 3.1 ตรวจสอบสถานะ
+    const matchStatus = statusFilter === 'all' ? true : b.status === statusFilter;
+    
+    // 3.2 ตรวจสอบวันที่ (สมมติว่า b.date เก็บในรูปแบบ YYYY-MM-DD หรือมีข้อความตรงกัน)
+    const matchDate = dateFilter === '' ? true : b.date.includes(dateFilter);
+    
+    // 3.3 ตรวจสอบคำค้นหา (ค้นหาจากชื่อผู้ป่วย หรือเบอร์โทรศัพท์)
+    const searchLower = searchQuery.toLowerCase();
+    const matchSearch = searchQuery === '' ? true : 
+      b.patientName.toLowerCase().includes(searchLower) || 
+      (b.relativePhone && b.relativePhone.includes(searchLower));
+
+    return matchStatus && matchDate && matchSearch;
+  });
+
   const pendingCount = bookings.filter(b => b.status === 'pending').length;
   const confirmedCount = bookings.filter(b => b.status === 'confirmed').length;
 
@@ -107,7 +122,7 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-gray-50 font-sans pb-10 relative">
       <Navbar />
 
-      {/* 🌟 กล่อง Popup Layout (Modal) 🌟 */}
+      {/* กล่อง Popup Layout (Modal) */}
       {actionModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center text-center animate-in zoom-in duration-200">
@@ -166,20 +181,60 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50">
-            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 w-full sm:w-auto">
-              <Filter size={16} className="text-gray-400" />
-              <select 
-                value={statusFilter} 
-                onChange={(e) => setStatusFilter(e.target.value)}
+          
+          {/* 🌟 4. ปรับปรุง UI แถบเครื่องมือค้นหาและตัวกรอง */}
+          <div className="p-4 border-b border-gray-100 flex flex-col lg:flex-row justify-between items-center gap-4 bg-gray-50/50">
+            
+            {/* ช่องค้นหา (Search) */}
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 w-full lg:w-1/3 focus-within:border-[#1A4F90] transition-colors">
+              <Search size={18} className="text-gray-400 shrink-0" />
+              <input 
+                type="text" 
+                placeholder="ค้นหาชื่อผู้ป่วย, เบอร์โทร..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent text-sm outline-none text-gray-700 w-full"
-              >
-                <option value="all">แสดงทั้งหมด</option>
-                <option value="pending">รอตรวจสอบ (Pending)</option>
-                <option value="confirmed">ยืนยันแล้ว (Confirmed)</option>
-                <option value="cancelled">ยกเลิกแล้ว (Cancelled)</option>
-              </select>
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="p-0.5 hover:bg-gray-100 rounded-full text-gray-400">
+                  <X size={14} />
+                </button>
+              )}
             </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+              {/* ช่องกรองวันที่ */}
+              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 w-full sm:w-auto focus-within:border-[#1A4F90] transition-colors">
+                <Calendar size={18} className="text-gray-400 shrink-0" />
+                <input 
+                  type="date" 
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="bg-transparent text-sm outline-none text-gray-700 w-full"
+                />
+                {dateFilter && (
+                  <button onClick={() => setDateFilter('')} className="p-0.5 hover:bg-gray-100 rounded-full text-gray-400" title="ล้างตัวกรองวันที่">
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {/* ช่องกรองสถานะ */}
+              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 w-full sm:w-auto focus-within:border-[#1A4F90] transition-colors">
+                <Filter size={18} className="text-gray-400 shrink-0" />
+                <select 
+                  value={statusFilter} 
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="bg-transparent text-sm outline-none text-gray-700 w-full cursor-pointer pr-4"
+                >
+                  <option value="all">สถานะทั้งหมด</option>
+                  <option value="pending">รอตรวจสอบ</option>
+                  <option value="confirmed">ยืนยันแล้ว</option>
+                  <option value="cancelled">ยกเลิกแล้ว</option>
+                </select>
+              </div>
+            </div>
+            
           </div>
 
           <div className="overflow-x-auto">
@@ -196,7 +251,13 @@ export default function AdminDashboardPage() {
               <tbody className="divide-y divide-gray-100">
                 {filteredBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-gray-500">ไม่มีข้อมูลคิวในระบบ</td>
+                    <td colSpan={5} className="p-12 text-center text-gray-500">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Search size={40} className="text-gray-300 mb-2" />
+                        <p className="text-base font-medium">ไม่พบข้อมูลที่ตรงกับการค้นหา</p>
+                        <p className="text-sm">ลองปรับเปลี่ยนคำค้นหา วันที่ หรือสถานะดูนะครับ</p>
+                      </div>
+                    </td>
                   </tr>
                 ) : (
                   filteredBookings.map((booking) => (
@@ -236,7 +297,6 @@ export default function AdminDashboardPage() {
 
                       <td className="p-4 align-top text-center">
                         <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          {/* 🌟 เรียกใช้ Modal แทน alert 🌟 */}
                           {booking.status === 'pending' && (
                             <button 
                               onClick={() => setActionModal({ isOpen: true, type: 'confirmed', bookingId: booking.id })}

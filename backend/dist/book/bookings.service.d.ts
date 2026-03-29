@@ -1,9 +1,11 @@
 import { Repository } from 'typeorm';
 import { BookingEntity } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { HolidayService } from '../holiday/holiday.service';
 export declare class BookingsService {
     private readonly bookingRepository;
-    constructor(bookingRepository: Repository<BookingEntity>);
+    private readonly holidayService;
+    constructor(bookingRepository: Repository<BookingEntity>, holidayService: HolidayService);
     findAll(): Promise<BookingEntity[]>;
     create(createBookingDto: CreateBookingDto): Promise<BookingEntity>;
     findMyBookings(userId: number): Promise<BookingEntity[]>;

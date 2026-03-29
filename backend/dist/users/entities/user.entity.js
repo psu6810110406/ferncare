@@ -21,6 +21,7 @@ let User = class User {
     username;
     password;
     role;
+    profileImageUrl;
     fullName;
     age;
     phone;
@@ -56,6 +57,10 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "profileImageUrl", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)

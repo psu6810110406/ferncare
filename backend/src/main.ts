@@ -1,15 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common'; // 🌟 1. Import ตัวนี้เพิ่มเข้ามา
+import { ValidationPipe } from '@nestjs/common';
+import { json, urlencoded } from 'express'; // 🌟 1. Import เครื่องมือสำหรับตั้งค่าขนาดข้อมูล
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 🌟 2. เปิดใช้งาน Validation ทั่วทั้งแอปพลิเคชัน
+  // 🌟 2. เพิ่ม 2 บรรทัดนี้ ขยายท่อรับข้อมูลให้รองรับไฟล์รูป Base64 ได้สูงสุด 10MB
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ extended: true, limit: '10mb' }));
+
+  // เปิดใช้งาน Validation ทั่วทั้งแอปพลิเคชัน
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // กรองฟิลด์ขยะที่ Frontend ส่งมาเกิน (แฮกเกอร์แอบส่งมา) ทิ้งไป
-      transform: true, // 🌟 สำคัญมาก: ตัวนี้จะช่วยแปลงชนิดข้อมูล เช่น สตริง '18' ให้เป็นตัวเลข 18 ตามที่เราเขียนไว้ใน DTO อัตโนมัติ
+      transform: true, // สำคัญมาก: แปลงชนิดข้อมูลอัตโนมัติ
     }),
   );
 

@@ -33,8 +33,10 @@ export default function LoginPage() {
       const decodedUser = jwtDecode<JwtPayload>(token);
       console.log('ข้อมูลผู้ใช้:', decodedUser);
 
+      localStorage.setItem('user', JSON.stringify(decodedUser));
+
       if (decodedUser.role === 'admin') {
-        navigate('/admin-dashboard');
+        navigate('/admin/dashboard');
       } else {
         navigate('/booking');
       }
